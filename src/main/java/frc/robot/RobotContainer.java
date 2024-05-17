@@ -54,6 +54,6 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // This is what "command" or task will run when you start autonomous
     // Change it to match whatever shape command you want to run
-    return new DriveForTimeCommand(m_drivetrain, 1.0, 0.0, 1.0);
+    return new TriangleCommand(m_drivetrain);
   }
 }

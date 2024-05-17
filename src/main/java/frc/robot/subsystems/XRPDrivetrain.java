@@ -39,7 +39,7 @@ public class XRPDrivetrain extends SubsystemBase {
   // Set up the XRPGyro
   private final XRPGyro m_gyro = new XRPGyro();
   private double newHeading = 0;
-  private final PIDController m_headingController = new PIDController(0.2, 0.0, 0.0);
+  private final PIDController m_headingController = new PIDController(0.2, 0.02, 0.0);
 
   // Create a timer
   private final Timer m_timer = new Timer();
@@ -68,20 +68,18 @@ public class XRPDrivetrain extends SubsystemBase {
   }
 
   public Command driveForTime(double xSpeed, double zSpeed, double seconds) {
-    return runOnce(() -> {
+    return runEnd(() -> {
 
-      // reset and start the timer
-      m_timer.reset();
-      m_timer.start();
+          // reset and start the timer
+          m_timer.reset();
+          m_timer.start();
 
-      // drive at the desired speed for so many seconds
-      while (m_timer.get() < seconds) {
-        arcadeDrive(xSpeed, zSpeed);
-      }
-
-      // stop motors when finished
-      arcadeDrive(0, 0);
-    });
+          // drive at the desired speed for so many seconds
+          arcadeDrive(xSpeed, zSpeed);
+        },
+        // stop motors when finished
+        () -> arcadeDrive(0.0, 0.0))
+        .withTimeout(seconds);
   }
 
   public void resetEncoders() {
@@ -153,6 +151,6 @@ public class XRPDrivetrain extends SubsystemBase {
             },
             // stop when finished
             () -> arcadeDrive(0, 0)
-        ));
+        )).until(m_headingController::atSetpoint);
   }
 }
