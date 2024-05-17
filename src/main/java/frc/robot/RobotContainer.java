@@ -15,6 +15,7 @@ import frc.robot.commands.DriveCommand;
 import frc.robot.commands.DriveForTimeCommand;
 import frc.robot.commands.shapes.TriangleCommand;
 import frc.robot.subsystems.XRPDrivetrain;
+import frc.robot.subsystems.XRPServoSubsystem;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -25,6 +26,7 @@ import frc.robot.subsystems.XRPDrivetrain;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final XRPDrivetrain m_drivetrain = new XRPDrivetrain();
+  private final XRPServoSubsystem m_servo = new XRPServoSubsystem();
   private final CommandXboxController m_controller = new CommandXboxController(0);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
@@ -44,6 +46,9 @@ public class RobotContainer {
 
     m_controller.povRight().whileTrue(m_drivetrain.rotateDegrees(-90));
     m_controller.povLeft().whileTrue(m_drivetrain.rotateDegrees(90));
+
+    m_controller.a().onTrue(m_servo.setServoAngle(90));
+    m_controller.b().onTrue(m_servo.setServoAngle(180));
   }
 
   /**
