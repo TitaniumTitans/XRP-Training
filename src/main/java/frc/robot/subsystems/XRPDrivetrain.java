@@ -4,11 +4,16 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.xrp.XRPGyro;
 import edu.wpi.first.wpilibj.xrp.XRPMotor;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class XRPDrivetrain extends SubsystemBase {
@@ -33,6 +38,8 @@ public class XRPDrivetrain extends SubsystemBase {
 
   // Set up the XRPGyro
   private final XRPGyro m_gyro = new XRPGyro();
+  private double newHeading = 0;
+  private final PIDController m_headingController = new PIDController(0.2, 0.0, 0.0);
 
   // Create a timer
   private final Timer m_timer = new Timer();
@@ -48,26 +55,33 @@ public class XRPDrivetrain extends SubsystemBase {
 
     // Invert right side since motor is flipped
     m_rightMotor.setInverted(true);
+
+    // Tell the PID that it can rotate 360 degrees
+    m_headingController.enableContinuousInput(0, 360);
+
+    // Start accumulating error when within 10 degrees of setpoint
+    m_headingController.setTolerance(1.0);
   }
 
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate) {
     m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate);
   }
 
-  public void driveForTime(double xSpeed, double zSpeed, double seconds) {
-    //TODO: finish the rest of this method used to draw shapes
+  public Command driveForTime(double xSpeed, double zSpeed, double seconds) {
+    return runOnce(() -> {
 
-    // reset and start the timer
-    m_timer.reset();
-    m_timer.start();
+      // reset and start the timer
+      m_timer.reset();
+      m_timer.start();
 
-    // drive at the desired speed for so many seconds
-    while(m_timer.get() < seconds) {
-      arcadeDrive(xSpeed, zSpeed);
-    }
+      // drive at the desired speed for so many seconds
+      while (m_timer.get() < seconds) {
+        arcadeDrive(xSpeed, zSpeed);
+      }
 
-    // stop motors when finished
-    arcadeDrive(0, 0);
+      // stop motors when finished
+      arcadeDrive(0, 0);
+    });
   }
 
   public void resetEncoders() {
@@ -93,6 +107,7 @@ public class XRPDrivetrain extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    SmartDashboard.putNumber("Heading", getGyroHeading());
   }
 
   @Override
@@ -101,18 +116,43 @@ public class XRPDrivetrain extends SubsystemBase {
   }
 
   // rotates the robot a certain amount of degrees positive counterclockwise
-  public void rotateDegrees(double degrees) {
-    // find the new heading goal
-    double newHeading = getGyroHeading() + degrees;
-    double error = newHeading - getGyroHeading();
+  public Command rotateDegrees(double degrees) {
+    return runOnce(() -> {
+      // find heading goal to get to
+      newHeading = getGyroHeading() + degrees;
 
-    // while we're more than a degree away move towards the goal getting slower and slower
-    while (Math.abs(error) > 1) {
-      error = newHeading - getGyroHeading();
-      arcadeDrive(0, error * 0.5);
-    }
+      // normalize heading goal to be +-360
+      while (newHeading > 360) {
+        newHeading -= 360;
+      }
 
-    // stop when finished
-    arcadeDrive(0, 0);
+      while (newHeading < 0) {
+        newHeading += 360;
+      }
+
+      // Tell the PID controller to get there
+      m_headingController.setSetpoint(newHeading);
+      SmartDashboard.putNumber("New Heading", newHeading);
+    })
+        .andThen(runEnd(() -> {
+              // calculate new output
+              double power = m_headingController.calculate(getGyroHeading());
+              power = MathUtil.clamp(power, -0.5, 0.5);
+              double error = m_headingController.getPositionError();
+
+              // log error and power outputs
+              SmartDashboard.putNumber("Error", error);
+              SmartDashboard.putNumber("Power", power);
+
+              // while we're more than a degree away move towards the goal getting slower and slower
+              if (!m_headingController.atSetpoint()) {
+                arcadeDrive(0, power);
+              } else {
+                arcadeDrive(0.0, 0.0);
+              }
+            },
+            // stop when finished
+            () -> arcadeDrive(0, 0)
+        ));
   }
 }

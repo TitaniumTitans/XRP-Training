@@ -6,9 +6,13 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.DriveCommand;
+import frc.robot.commands.DriveForTimeCommand;
 import frc.robot.commands.shapes.TriangleCommand;
 import frc.robot.subsystems.XRPDrivetrain;
 
@@ -37,6 +41,9 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     m_drivetrain.setDefaultCommand(new DriveCommand(m_drivetrain, m_controller));
+
+    m_controller.povRight().whileTrue(m_drivetrain.rotateDegrees(-90));
+    m_controller.povLeft().whileTrue(m_drivetrain.rotateDegrees(90));
   }
 
   /**
@@ -47,6 +54,6 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // This is what "command" or task will run when you start autonomous
     // Change it to match whatever shape command you want to run
-    return new TriangleCommand(m_drivetrain);
+    return new DriveForTimeCommand(m_drivetrain, 1.0, 0.0, 1.0);
   }
 }
