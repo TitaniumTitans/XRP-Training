@@ -15,6 +15,7 @@ import frc.robot.commands.DriveCommand;
 import frc.robot.commands.DriveForTimeCommand;
 import frc.robot.commands.shapes.TriangleCommand;
 import frc.robot.subsystems.XRPDrivetrain;
+import frc.robot.subsystems.XRPLedSubsystem;
 import frc.robot.subsystems.XRPServoSubsystem;
 
 /**
@@ -27,6 +28,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final XRPDrivetrain m_drivetrain = new XRPDrivetrain();
   private final XRPServoSubsystem m_servo = new XRPServoSubsystem();
+  private final XRPLedSubsystem m_led = new XRPLedSubsystem();
   private final CommandXboxController m_controller = new CommandXboxController(0);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
@@ -42,6 +44,8 @@ public class RobotContainer {
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
+    Trigger ledButton = new Trigger(m_led::getOnBoardButton);
+
     m_drivetrain.setDefaultCommand(new DriveCommand(m_drivetrain, m_controller));
 
     m_controller.povRight().whileTrue(m_drivetrain.rotateDegrees(-90));
@@ -49,6 +53,8 @@ public class RobotContainer {
 
     m_controller.a().onTrue(m_servo.setServoAngle(90));
     m_controller.b().onTrue(m_servo.setServoAngle(180));
+
+    ledButton.onTrue(m_led.toggleLed());
   }
 
   /**
