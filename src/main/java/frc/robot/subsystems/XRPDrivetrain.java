@@ -7,6 +7,7 @@ package frc.robot.subsystems;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.xrp.XRPGyro;
 import edu.wpi.first.wpilibj.xrp.XRPMotor;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -54,19 +55,6 @@ public class XRPDrivetrain extends SubsystemBase {
     m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate);
   }
 
-  public void driveForTime(double xSpeed, double zSpeed, double seconds) {
-    //TODO: finish the rest of this method used to draw shapes
-
-    // reset and start the timer
-
-    // drive at the desired speed until timer has reached a certain value
-    while(/* insert boolean condition here */) {
-
-    }
-
-    // stop motors and timer when finished
-  }
-
   public void resetEncoders() {
     m_leftEncoder.reset();
     m_rightEncoder.reset();
@@ -90,6 +78,7 @@ public class XRPDrivetrain extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    SmartDashboard.putNumber("Robot Heading", getGyroHeading());
   }
 
   @Override
