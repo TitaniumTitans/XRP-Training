@@ -9,8 +9,8 @@ public class SimpleAutoCommand extends SequentialCommandGroup {
     for (int i = 0; i < 4; i++) {
       // for each side drive forward and then turn to the left
       addCommands(
-          new DriveForTimeCommand(drivetrain, 1.0, 0.5, 0.0),
-          new DriveForTimeCommand(drivetrain, 1.0, 0.0, 0.5)
+          new DriveForTimeCommand(drivetrain, 1.0, 1.0, 0.0),
+          new DriveForTimeCommand(drivetrain, 1.0, 0.0, 1.0)
       );
     }
   }
