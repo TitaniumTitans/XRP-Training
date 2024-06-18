@@ -5,11 +5,17 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommand;
+import frc.robot.commands.DriveForTimeCommand;
+import frc.robot.commands.LedCommand;
 import frc.robot.commands.shapes.SquareAutoCommand;
+import frc.robot.commands.shapes.SimpleAutoCommand;
 import frc.robot.subsystems.XRPDrivetrain;
+import frc.robot.subsystems.XRPLed;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -20,12 +26,22 @@ import frc.robot.subsystems.XRPDrivetrain;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final XRPDrivetrain m_drivetrain = new XRPDrivetrain();
+  private final XRPLed m_led = new XRPLed();
   private final CommandXboxController m_controller = new CommandXboxController(0);
+
+  private final SendableChooser<Command> m_autoChooser = new SendableChooser<>();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the button bindings
     configureButtonBindings();
+
+    m_autoChooser.addOption("Dropdown", new SimpleAutoCommand(m_drivetrain));
+    m_autoChooser.addOption("Dropdown 2 Electric Boogaloo",
+        new DriveForTimeCommand(m_drivetrain, 1.0, 1.0, 0.0));
+
+    SmartDashboard.putData("Dropdown 3, the return of the dropdown",
+        m_autoChooser);
   }
 
   /**
@@ -36,6 +52,9 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     m_drivetrain.setDefaultCommand(new DriveCommand(m_drivetrain, m_controller));
+
+    m_controller.b().onTrue(new LedCommand(m_led, true));
+    m_controller.x().onTrue(new LedCommand(m_led, false));
   }
 
   /**
@@ -46,6 +65,6 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // This is what "command" or task will run when you start autonomous
     // Change it to match whatever shape command you want to run
-    return new SquareAutoCommand(m_drivetrain);
+    return m_autoChooser.getSelected();
   }
 }
