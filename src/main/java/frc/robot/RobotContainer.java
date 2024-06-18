@@ -12,10 +12,11 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommand;
 import frc.robot.commands.DriveForTimeCommand;
 import frc.robot.commands.LedCommand;
-import frc.robot.commands.shapes.SquareAutoCommand;
+import frc.robot.commands.ServoControlCommand;
 import frc.robot.commands.shapes.SimpleAutoCommand;
 import frc.robot.subsystems.XRPDrivetrain;
 import frc.robot.subsystems.XRPLed;
+import frc.robot.subsystems.XRPServoSubsystem;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -27,6 +28,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final XRPDrivetrain m_drivetrain = new XRPDrivetrain();
   private final XRPLed m_led = new XRPLed();
+  private final XRPServoSubsystem m_servo = new XRPServoSubsystem();
   private final CommandXboxController m_controller = new CommandXboxController(0);
 
   private final SendableChooser<Command> m_autoChooser = new SendableChooser<>();
@@ -55,6 +57,15 @@ public class RobotContainer {
 
     m_controller.b().onTrue(new LedCommand(m_led, true));
     m_controller.x().onTrue(new LedCommand(m_led, false));
+
+    // Good, new and shiny
+    m_controller.a().whileTrue(
+        m_servo.setServoPositionFactory(90.0)
+            .withTimeout(0.5)
+            .andThen(m_servo.setServoPositionFactory(0.0)
+                .withTimeout(0.5))
+            .repeatedly()
+    );
   }
 
   /**
