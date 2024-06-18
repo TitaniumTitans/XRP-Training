@@ -41,6 +41,7 @@ public class RobotContainer {
     m_autoChooser.addOption("Dropdown", new SimpleAutoCommand(m_drivetrain));
     m_autoChooser.addOption("Dropdown 2 Electric Boogaloo",
         new DriveForTimeCommand(m_drivetrain, 1.0, 1.0, 0.0));
+    m_autoChooser.setDefaultOption("Avoid Walls", m_drivetrain.avoidWallsFactory());
 
     SmartDashboard.putData("Dropdown 3, the return of the dropdown",
         m_autoChooser);
