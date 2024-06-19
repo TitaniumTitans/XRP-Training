@@ -67,6 +67,10 @@ public class RobotContainer {
                 .withTimeout(0.5))
             .repeatedly()
     );
+
+    m_controller.povLeft().whileTrue(m_drivetrain.turnForDegreesFactory(90));
+    m_controller.povRight().whileTrue(m_drivetrain.turnForDegreesFactory(-90));
+
   }
 
   /**
