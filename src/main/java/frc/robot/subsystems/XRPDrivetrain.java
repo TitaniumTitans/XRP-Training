@@ -105,7 +105,7 @@ public class XRPDrivetrain extends SubsystemBase {
     return run(() -> {
       double output = m_headingController.calculate(getGyroHeading(), setpoint);
       arcadeDrive(0.0, output);
-    }).until(() -> m_headingController.atSetpoint());
+    }).until(m_headingController::atSetpoint);
   }
 
   // Neither of these periodic methods are needed, but you can add things to them
