@@ -4,11 +4,22 @@
 
 package frc.robot.subsystems;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.ReplanningConfig;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.xrp.XRPGyro;
 import edu.wpi.first.wpilibj.xrp.XRPMotor;
@@ -38,9 +49,16 @@ public class XRPDrivetrain extends SubsystemBase {
   // Set up the differential drive controller
   private final DifferentialDrive m_diffDrive = new DifferentialDrive(m_leftMotor, m_rightMotor);
 
+  // Creates an odometry tracker
+  private final DifferentialDriveOdometry m_odometry;
+  private final DifferentialDriveKinematics m_kinematics =
+      new DifferentialDriveKinematics(Units.inchesToMeters(6.0));
+
+  private final Field2d m_field = new Field2d();
+
   // Create a PID Controller
   private final PIDController m_headingController =
-      new PIDController(0.0, 0.0, 0.0);
+      new PIDController(0.05, 0.01, 0.0);
 
   // Set up the XRPGyro
   private final XRPGyro m_gyro = new XRPGyro();
@@ -65,6 +83,36 @@ public class XRPDrivetrain extends SubsystemBase {
 
     // Invert right side since motor is flipped
     m_rightMotor.setInverted(true);
+
+    m_odometry =
+        new DifferentialDriveOdometry(
+            Rotation2d.fromDegrees(getGyroHeading()),
+            getLeftDistanceInch(),
+            getRightDistanceInch()
+        );
+
+    SmartDashboard.putData("Robot Position", m_field);
+
+    // Set up the AutoBuilder for pathplanner
+    AutoBuilder.configureRamsete(
+        () -> m_odometry.getPoseMeters(), // Robot pose supplier
+        this::poseReset, // Method to reset odometry (will be called if your auto has a starting pose)
+        this::getChassisSpeeds, // Current ChassisSpeeds supplier
+        this::drive, // Method that will drive the robot given ChassisSpeeds
+        new ReplanningConfig(), // Default path replanning config. See the API for the options here
+        () -> {
+          // Boolean supplier that controls when the path will be mirrored for the red alliance
+          // This will flip the path being followed to the red side of the field.
+          // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+          var alliance = DriverStation.getAlliance();
+          if (alliance.isPresent()) {
+            return alliance.get() == DriverStation.Alliance.Red;
+          }
+          return false;
+        },
+        this // Reference to this subsystem to set requirements
+    );
   }
 
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate) {
@@ -101,11 +149,38 @@ public class XRPDrivetrain extends SubsystemBase {
   }
 
   public Command turnForDegreesFactory(double degrees) {
-    final double setpoint = degrees + getGyroHeading();
-    return run(() -> {
-      double output = m_headingController.calculate(getGyroHeading(), setpoint);
-      arcadeDrive(0.0, output);
-    }).until(m_headingController::atSetpoint);
+    return runOnce(() ->
+        m_headingController.setSetpoint(getGyroHeading() + degrees))
+        .andThen(
+            run(() -> {
+              double output = m_headingController.calculate(getGyroHeading());
+              arcadeDrive(0.0, output);
+            }).until(m_headingController::atSetpoint));
+  }
+
+  public void poseReset(Pose2d pose) {
+    resetEncoders();
+    m_odometry.resetPosition(
+        Rotation2d.fromDegrees(getGyroHeading()),
+        getLeftDistanceInch(),
+        getRightDistanceInch(),
+        pose);
+  }
+
+  public ChassisSpeeds getChassisSpeeds() {
+    return m_kinematics.toChassisSpeeds(
+        new DifferentialDriveWheelSpeeds(
+            m_leftEncoder.getRate(),
+            m_rightEncoder.getRate()
+        )
+    );
+  }
+
+  public void drive(ChassisSpeeds speeds) {
+    arcadeDrive(
+        speeds.vxMetersPerSecond,
+        speeds.omegaRadiansPerSecond
+    );
   }
 
   // Neither of these periodic methods are needed, but you can add things to them
@@ -118,6 +193,14 @@ public class XRPDrivetrain extends SubsystemBase {
     SmartDashboard.putNumber("Distance (in.)", getRangeInches());
 
     SmartDashboard.putNumber("PID Setpoint", m_headingController.getSetpoint());
+
+    SmartDashboard.putNumber("Left Encoder", getLeftDistanceInch());
+    SmartDashboard.putNumber("Right Encoder", getRightDistanceInch());
+
+    m_odometry.update(Rotation2d.fromDegrees(getGyroHeading()),
+        getLeftDistanceInch() * (18.0 / 96.0),
+        getRightDistanceInch() * (18.0 / 96.0));
+    m_field.setRobotPose(m_odometry.getPoseMeters());
   }
 
   @Override

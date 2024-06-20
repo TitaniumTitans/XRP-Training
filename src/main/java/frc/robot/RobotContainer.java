@@ -4,10 +4,13 @@
 
 package frc.robot;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommand;
 import frc.robot.commands.DriveForTimeCommand;
@@ -43,6 +46,9 @@ public class RobotContainer {
         new DriveForTimeCommand(m_drivetrain, 1.0, 1.0, 0.0));
     m_autoChooser.setDefaultOption("Avoid Walls", m_drivetrain.avoidWallsFactory());
 
+    m_autoChooser.addOption("Pathplanner Auto 1",
+        AutoBuilder.buildAuto("Auto1"));
+
     SmartDashboard.putData("Dropdown 3, the return of the dropdown",
         m_autoChooser);
   }
@@ -58,6 +64,8 @@ public class RobotContainer {
 
     m_controller.b().onTrue(new LedCommand(m_led, true));
     m_controller.x().onTrue(new LedCommand(m_led, false));
+
+    m_controller.start().onTrue(new InstantCommand(() -> m_drivetrain.poseReset(new Pose2d()), m_drivetrain));
 
     // Good, new and shiny
     m_controller.a().whileTrue(
